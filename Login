@@ -1,0 +1,116 @@
+package sistemagestiongastronomica;
+
+import javax.swing.*;
+import java.awt.*;
+import java.sql.*;
+
+public class Login extends JFrame {
+
+    private JTextField txtUsuario;
+    private JPasswordField txtContrasena;
+    private JButton btnIngresar;
+
+    public Login() {
+
+        setTitle("Sistema de Gestión Gastronómica");
+        setSize(450, 300);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(false);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+
+        // TÍTULO
+        JLabel titulo = new JLabel("SISTEMA DE GESTIÓN GASTRONÓMICA");
+        titulo.setFont(new Font("Arial", Font.BOLD, 18));
+        titulo.setBounds(65, 25, 330, 30);
+        panel.add(titulo);
+
+        // USUARIO
+        JLabel lblUsuario = new JLabel("Usuario:");
+        lblUsuario.setBounds(70, 85, 100, 25);
+        panel.add(lblUsuario);
+
+        txtUsuario = new JTextField();
+        txtUsuario.setBounds(170, 85, 200, 25);
+        panel.add(txtUsuario);
+
+        // CONTRASEÑA
+        JLabel lblContrasena = new JLabel("Contraseña:");
+        lblContrasena.setBounds(70, 125, 100, 25);
+        panel.add(lblContrasena);
+
+        txtContrasena = new JPasswordField();
+        txtContrasena.setBounds(170, 125, 200, 25);
+        panel.add(txtContrasena);
+
+        // BOTÓN INGRESAR
+        btnIngresar = new JButton("INGRESAR");
+        btnIngresar.setBounds(150, 180, 150, 35);
+        panel.add(btnIngresar);
+
+        btnIngresar.addActionListener(e -> iniciarSesion());
+
+        add(panel);
+    }
+
+    private void iniciarSesion() {
+
+        String usuario = txtUsuario.getText();
+        String contrasena =
+                new String(txtContrasena.getPassword());
+
+        String sql =
+                "SELECT * FROM usuarios " +
+                "WHERE usuario = ? AND contrasena = ?";
+
+        try (
+            Connection cn = Conexion.conectar();
+            PreparedStatement ps = cn.prepareStatement(sql)
+        ) {
+
+            ps.setString(1, usuario);
+            ps.setString(2, contrasena);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "¡Bienvenido al sistema!"
+                );
+
+                new MenuPrincipal().setVisible(true);
+
+                dispose();
+
+            } else {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Usuario o contraseña incorrectos.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error de conexión: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            new Login().setVisible(true);
+        });
+    }
+}
