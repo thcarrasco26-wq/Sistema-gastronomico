@@ -1,0 +1,305 @@
+```java
+package sistemagestiongastronomica;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.sql.*;
+
+public class Ventas extends JFrame {
+
+    private JTable tablaPedidos;
+    private DefaultTableModel modeloPedidos;
+
+    private JTable tablaVentas;
+    private DefaultTableModel modeloVentas;
+
+    public Ventas() {
+
+        setTitle("Gestión de Ventas");
+        setSize(900, 650);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(false);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+
+        // =========================
+        // TÍTULO
+        // =========================
+
+        JLabel titulo = new JLabel("GESTIÓN DE VENTAS");
+        titulo.setFont(new Font("Arial", Font.BOLD, 24));
+        titulo.setBounds(330, 15, 300, 35);
+        panel.add(titulo);
+
+        // =========================
+        // PEDIDOS ENTREGADOS
+        // =========================
+
+        JLabel lblPedidos = new JLabel("PEDIDOS ENTREGADOS");
+        lblPedidos.setFont(new Font("Arial", Font.BOLD, 18));
+        lblPedidos.setBounds(40, 65, 300, 30);
+        panel.add(lblPedidos);
+
+        modeloPedidos = new DefaultTableModel(
+                new Object[]{"ID Pedido", "Fecha", "Estado", "Total"}, 0
+        );
+
+        tablaPedidos = new JTable(modeloPedidos);
+
+        JScrollPane scrollPedidos = new JScrollPane(tablaPedidos);
+        scrollPedidos.setBounds(40, 100, 805, 180);
+        panel.add(scrollPedidos);
+
+        // =========================
+        // REGISTRAR VENTA
+        // =========================
+
+        JButton btnRegistrar = new JButton("REGISTRAR VENTA");
+        btnRegistrar.setBounds(40, 300, 180, 40);
+        panel.add(btnRegistrar);
+
+        JButton btnActualizar = new JButton("ACTUALIZAR");
+        btnActualizar.setBounds(235, 300, 140, 40);
+        panel.add(btnActualizar);
+
+        // =========================
+        // HISTORIAL DE VENTAS
+        // =========================
+
+        JLabel lblVentas = new JLabel("HISTORIAL DE VENTAS");
+        lblVentas.setFont(new Font("Arial", Font.BOLD, 18));
+        lblVentas.setBounds(40, 365, 300, 30);
+        panel.add(lblVentas);
+
+        modeloVentas = new DefaultTableModel(
+                new Object[]{"ID Venta", "ID Pedido", "Fecha", "Total"}, 0
+        );
+
+        tablaVentas = new JTable(modeloVentas);
+
+        JScrollPane scrollVentas = new JScrollPane(tablaVentas);
+        scrollVentas.setBounds(40, 400, 805, 150);
+        panel.add(scrollVentas);
+
+        // =========================
+        // CARGAR DATOS
+        // =========================
+
+        cargarPedidosEntregados();
+        cargarVentas();
+
+        // =========================
+        // EVENTOS
+        // =========================
+
+        btnRegistrar.addActionListener(e -> registrarVenta());
+
+        btnActualizar.addActionListener(e -> {
+            cargarPedidosEntregados();
+            cargarVentas();
+        });
+
+        add(panel);
+    }
+
+    // =========================================================
+    // CARGAR PEDIDOS ENTREGADOS
+    // =========================================================
+
+    private void cargarPedidosEntregados() {
+
+        modeloPedidos.setRowCount(0);
+
+        String sql =
+                "SELECT id_pedido, fecha, estado, total " +
+                "FROM pedidos " +
+                "WHERE estado = 'Entregado' " +
+                "ORDER BY id_pedido DESC";
+
+        try (Connection cn = Conexion.conectar();
+             Statement st = cn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+
+                modeloPedidos.addRow(new Object[]{
+                        rs.getInt("id_pedido"),
+                        rs.getTimestamp("fecha"),
+                        rs.getString("estado"),
+                        "S/ " + String.format(
+                                "%.2f",
+                                rs.getDouble("total")
+                        )
+                });
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al cargar pedidos: " +
+                    ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    // =========================================================
+    // REGISTRAR VENTA
+    // =========================================================
+
+    private void registrarVenta() {
+
+        int fila = tablaPedidos.getSelectedRow();
+
+        if (fila == -1) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Selecciona un pedido entregado."
+            );
+
+            return;
+        }
+
+        int idPedido =
+                Integer.parseInt(
+                        modeloPedidos.getValueAt(fila, 0).toString()
+                );
+
+        String totalTexto =
+                modeloPedidos.getValueAt(fila, 3)
+                        .toString()
+                        .replace("S/ ", "");
+
+        double total =
+                Double.parseDouble(totalTexto);
+
+        // Verificar que el pedido no tenga ya una venta
+
+        String verificar =
+                "SELECT COUNT(*) FROM ventas WHERE id_pedido=?";
+
+        try (Connection cn = Conexion.conectar();
+             PreparedStatement psVerificar =
+                     cn.prepareStatement(verificar)) {
+
+            psVerificar.setInt(1, idPedido);
+
+            ResultSet rs = psVerificar.executeQuery();
+
+            if (rs.next() && rs.getInt(1) > 0) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Este pedido ya tiene una venta registrada."
+                );
+
+                return;
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al verificar venta: " +
+                    ex.getMessage()
+            );
+
+            return;
+        }
+
+        // Registrar venta
+
+        String sql =
+                "INSERT INTO ventas (id_pedido, total) " +
+                "VALUES (?, ?)";
+
+        try (Connection cn = Conexion.conectar();
+             PreparedStatement ps =
+                     cn.prepareStatement(sql)) {
+
+            ps.setInt(1, idPedido);
+            ps.setDouble(2, total);
+
+            ps.executeUpdate();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "¡Venta registrada correctamente!\n\n" +
+                    "Pedido: " + idPedido +
+                    "\nTotal: S/ " +
+                    String.format("%.2f", total)
+            );
+
+            cargarVentas();
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al registrar venta: " +
+                    ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    // =========================================================
+    // CARGAR HISTORIAL DE VENTAS
+    // =========================================================
+
+    private void cargarVentas() {
+
+        modeloVentas.setRowCount(0);
+
+        String sql =
+                "SELECT id_venta, id_pedido, fecha, total " +
+                "FROM ventas " +
+                "ORDER BY id_venta DESC";
+
+        try (Connection cn = Conexion.conectar();
+             Statement st = cn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+
+                modeloVentas.addRow(new Object[]{
+                        rs.getInt("id_venta"),
+                        rs.getInt("id_pedido"),
+                        rs.getTimestamp("fecha"),
+                        "S/ " + String.format(
+                                "%.2f",
+                                rs.getDouble("total")
+                        )
+                });
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al cargar ventas: " +
+                    ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    // =========================================================
+    // MAIN
+    // =========================================================
+
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            new Ventas().setVisible(true);
+        });
+    }
+}
