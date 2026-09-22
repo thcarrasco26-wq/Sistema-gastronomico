@@ -1,0 +1,402 @@
+package sistemagestiongastronomica;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.sql.*;
+
+public class Productos extends JFrame {
+
+    private JTextField txtId;
+    private JTextField txtNombre;
+    private JTextField txtPrecio;
+    private JTextField txtStock;
+
+    private JTable tabla;
+    private DefaultTableModel modelo;
+
+    public Productos() {
+
+        setTitle("Gestión de Productos");
+        setSize(800, 550);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(false);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+
+        JLabel titulo = new JLabel("GESTIÓN DE PRODUCTOS");
+        titulo.setFont(new Font("Arial", Font.BOLD, 24));
+        titulo.setBounds(270, 20, 300, 40);
+        panel.add(titulo);
+
+        // ID
+        JLabel lblId = new JLabel("ID:");
+        lblId.setBounds(50, 80, 100, 25);
+        panel.add(lblId);
+
+        txtId = new JTextField();
+        txtId.setBounds(150, 80, 200, 25);
+        txtId.setEditable(false);
+        panel.add(txtId);
+
+        // NOMBRE
+        JLabel lblNombre = new JLabel("Nombre:");
+        lblNombre.setBounds(50, 120, 100, 25);
+        panel.add(lblNombre);
+
+        txtNombre = new JTextField();
+        txtNombre.setBounds(150, 120, 200, 25);
+        panel.add(txtNombre);
+
+        // PRECIO
+        JLabel lblPrecio = new JLabel("Precio:");
+        lblPrecio.setBounds(400, 80, 100, 25);
+        panel.add(lblPrecio);
+
+        txtPrecio = new JTextField();
+        txtPrecio.setBounds(500, 80, 200, 25);
+        panel.add(txtPrecio);
+
+        // STOCK
+        JLabel lblStock = new JLabel("Stock:");
+        lblStock.setBounds(400, 120, 100, 25);
+        panel.add(lblStock);
+
+        txtStock = new JTextField();
+        txtStock.setBounds(500, 120, 200, 25);
+        panel.add(txtStock);
+
+        // BOTÓN REGISTRAR
+        JButton btnRegistrar = new JButton("REGISTRAR");
+        btnRegistrar.setBounds(50, 170, 150, 35);
+        panel.add(btnRegistrar);
+
+        // BOTÓN MODIFICAR
+        JButton btnModificar = new JButton("MODIFICAR");
+        btnModificar.setBounds(220, 170, 150, 35);
+        panel.add(btnModificar);
+
+        // BOTÓN ELIMINAR
+        JButton btnEliminar = new JButton("ELIMINAR");
+        btnEliminar.setBounds(390, 170, 150, 35);
+        panel.add(btnEliminar);
+
+        // BOTÓN LIMPIAR
+        JButton btnLimpiar = new JButton("LIMPIAR");
+        btnLimpiar.setBounds(560, 170, 150, 35);
+        panel.add(btnLimpiar);
+
+        // TABLA
+        modelo = new DefaultTableModel();
+
+        modelo.addColumn("ID");
+        modelo.addColumn("Nombre");
+        modelo.addColumn("Precio");
+        modelo.addColumn("Stock");
+
+        tabla = new JTable(modelo);
+
+        JScrollPane scroll = new JScrollPane(tabla);
+        scroll.setBounds(50, 230, 660, 220);
+        panel.add(scroll);
+
+        // EVENTO REGISTRAR
+        btnRegistrar.addActionListener(e -> registrarProducto());
+
+        // EVENTO MODIFICAR
+        btnModificar.addActionListener(e -> modificarProducto());
+
+        // EVENTO ELIMINAR
+        btnEliminar.addActionListener(e -> eliminarProducto());
+
+        // EVENTO LIMPIAR
+        btnLimpiar.addActionListener(e -> limpiarCampos());
+
+        // SELECCIONAR PRODUCTO DE LA TABLA
+        tabla.getSelectionModel().addListSelectionListener(e -> {
+
+            if (!e.getValueIsAdjusting()) {
+
+                int fila = tabla.getSelectedRow();
+
+                if (fila >= 0) {
+
+                    txtId.setText(
+                            modelo.getValueAt(fila, 0).toString()
+                    );
+
+                    txtNombre.setText(
+                            modelo.getValueAt(fila, 1).toString()
+                    );
+
+                    txtPrecio.setText(
+                            modelo.getValueAt(fila, 2).toString()
+                    );
+
+                    txtStock.setText(
+                            modelo.getValueAt(fila, 3).toString()
+                    );
+                }
+            }
+        });
+
+        add(panel);
+
+        cargarProductos();
+    }
+
+    // ==============================
+    // REGISTRAR PRODUCTO
+    // ==============================
+
+    private void registrarProducto() {
+
+        String nombre = txtNombre.getText();
+        String precioTexto = txtPrecio.getText();
+        String stockTexto = txtStock.getText();
+
+        if (nombre.isEmpty() ||
+                precioTexto.isEmpty() ||
+                stockTexto.isEmpty()) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Complete todos los campos."
+            );
+
+            return;
+        }
+
+        try {
+
+            double precio = Double.parseDouble(precioTexto);
+            int stock = Integer.parseInt(stockTexto);
+
+            String sql =
+                    "INSERT INTO productos " +
+                    "(nombre, precio, stock) " +
+                    "VALUES (?, ?, ?)";
+
+            try (
+                    Connection cn = Conexion.conectar();
+                    PreparedStatement ps =
+                            cn.prepareStatement(sql)
+            ) {
+
+                ps.setString(1, nombre);
+                ps.setDouble(2, precio);
+                ps.setInt(3, stock);
+
+                ps.executeUpdate();
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Producto registrado correctamente."
+                );
+
+                limpiarCampos();
+                cargarProductos();
+            }
+
+        } catch (NumberFormatException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Precio o stock inválido."
+            );
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al registrar: " + e.getMessage()
+            );
+        }
+    }
+
+    // ==============================
+    // MODIFICAR PRODUCTO
+    // ==============================
+
+    private void modificarProducto() {
+
+        if (txtId.getText().isEmpty()) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Seleccione un producto de la tabla."
+            );
+
+            return;
+        }
+
+        try {
+
+            int id = Integer.parseInt(txtId.getText());
+            double precio = Double.parseDouble(txtPrecio.getText());
+            int stock = Integer.parseInt(txtStock.getText());
+
+            String sql =
+                    "UPDATE productos " +
+                    "SET nombre = ?, precio = ?, stock = ? " +
+                    "WHERE id = ?";
+
+            try (
+                    Connection cn = Conexion.conectar();
+                    PreparedStatement ps =
+                            cn.prepareStatement(sql)
+            ) {
+
+                ps.setString(1, txtNombre.getText());
+                ps.setDouble(2, precio);
+                ps.setInt(3, stock);
+                ps.setInt(4, id);
+
+                ps.executeUpdate();
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Producto modificado correctamente."
+                );
+
+                limpiarCampos();
+                cargarProductos();
+            }
+
+        } catch (NumberFormatException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Datos numéricos inválidos."
+            );
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al modificar: " + e.getMessage()
+            );
+        }
+    }
+
+    // ==============================
+    // ELIMINAR PRODUCTO
+    // ==============================
+
+    private void eliminarProducto() {
+
+        if (txtId.getText().isEmpty()) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Seleccione un producto de la tabla."
+            );
+
+            return;
+        }
+
+        int respuesta = JOptionPane.showConfirmDialog(
+                this,
+                "¿Está seguro de eliminar este producto?",
+                "Confirmar eliminación",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (respuesta != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try {
+
+            int id = Integer.parseInt(txtId.getText());
+
+            String sql =
+                    "DELETE FROM productos WHERE id = ?";
+
+            try (
+                    Connection cn = Conexion.conectar();
+                    PreparedStatement ps =
+                            cn.prepareStatement(sql)
+            ) {
+
+                ps.setInt(1, id);
+
+                ps.executeUpdate();
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Producto eliminado correctamente."
+                );
+
+                limpiarCampos();
+                cargarProductos();
+            }
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al eliminar: " + e.getMessage()
+            );
+        }
+    }
+
+    // ==============================
+    // CARGAR PRODUCTOS
+    // ==============================
+
+    private void cargarProductos() {
+
+        modelo.setRowCount(0);
+
+        String sql =
+                "SELECT id, nombre, precio, stock " +
+                "FROM productos";
+
+        try (
+                Connection cn = Conexion.conectar();
+                PreparedStatement ps =
+                        cn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()
+        ) {
+
+            while (rs.next()) {
+
+                modelo.addRow(new Object[]{
+                        rs.getInt("id"),
+                        rs.getString("nombre"),
+                        rs.getDouble("precio"),
+                        rs.getInt("stock")
+                });
+            }
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al cargar productos: "
+                    + e.getMessage()
+            );
+        }
+    }
+
+    private void limpiarCampos() {
+
+        txtId.setText("");
+        txtNombre.setText("");
+        txtPrecio.setText("");
+        txtStock.setText("");
+
+        tabla.clearSelection();
+    }
+
+
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            new Productos().setVisible(true);
+        });
+    }
+}
