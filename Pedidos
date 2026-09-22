@@ -1,0 +1,656 @@
+package sistemagestiongastronomica;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.sql.*;
+
+public class Pedidos extends JFrame {
+
+    private JComboBox<String> cmbProducto;
+    private JTextField txtCantidad;
+    private JLabel lblPrecio;
+    private JLabel lblTotal;
+
+    private JTable tablaDetalle;
+    private DefaultTableModel modeloDetalle;
+
+    private JTable tablaPedidos;
+    private DefaultTableModel modeloPedidos;
+
+    private double total = 0;
+
+    public Pedidos() {
+
+        setTitle("Gestión de Pedidos");
+        setSize(900, 700);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(false);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+
+        // =========================
+        // TÍTULO
+        // =========================
+
+        JLabel titulo = new JLabel("GESTIÓN DE PEDIDOS");
+        titulo.setFont(new Font("Arial", Font.BOLD, 24));
+        titulo.setBounds(330, 15, 300, 35);
+        panel.add(titulo);
+
+        // =========================
+        // PRODUCTO
+        // =========================
+
+        JLabel lblProducto = new JLabel("Producto:");
+        lblProducto.setBounds(40, 65, 100, 25);
+        panel.add(lblProducto);
+
+        cmbProducto = new JComboBox<>();
+        cmbProducto.setBounds(120, 65, 250, 25);
+        panel.add(cmbProducto);
+
+        // =========================
+        // CANTIDAD
+        // =========================
+
+        JLabel lblCantidad = new JLabel("Cantidad:");
+        lblCantidad.setBounds(400, 65, 80, 25);
+        panel.add(lblCantidad);
+
+        txtCantidad = new JTextField();
+        txtCantidad.setBounds(475, 65, 80, 25);
+        panel.add(txtCantidad);
+
+        // =========================
+        // PRECIO
+        // =========================
+
+        JLabel lblPrecioTexto = new JLabel("Precio:");
+        lblPrecioTexto.setBounds(580, 65, 60, 25);
+        panel.add(lblPrecioTexto);
+
+        lblPrecio = new JLabel("0.00");
+        lblPrecio.setBounds(635, 65, 80, 25);
+        panel.add(lblPrecio);
+
+        // =========================
+        // AGREGAR
+        // =========================
+
+        JButton btnAgregar = new JButton("AGREGAR");
+        btnAgregar.setBounds(735, 60, 110, 35);
+        panel.add(btnAgregar);
+
+        // =========================
+        // TABLA DETALLE
+        // =========================
+
+        JLabel lblDetalle = new JLabel("PRODUCTOS DEL PEDIDO");
+        lblDetalle.setFont(new Font("Arial", Font.BOLD, 16));
+        lblDetalle.setBounds(40, 105, 250, 25);
+        panel.add(lblDetalle);
+
+        modeloDetalle = new DefaultTableModel(
+                new Object[]{"ID", "Producto", "Cantidad", "Precio", "Subtotal"}, 0
+        );
+
+        tablaDetalle = new JTable(modeloDetalle);
+
+        JScrollPane scrollDetalle = new JScrollPane(tablaDetalle);
+        scrollDetalle.setBounds(40, 135, 805, 170);
+        panel.add(scrollDetalle);
+
+        // =========================
+        // TOTAL
+        // =========================
+
+        JLabel lblTotalTexto = new JLabel("TOTAL:");
+        lblTotalTexto.setFont(new Font("Arial", Font.BOLD, 20));
+        lblTotalTexto.setBounds(650, 315, 80, 30);
+        panel.add(lblTotalTexto);
+
+        lblTotal = new JLabel("S/ 0.00");
+        lblTotal.setFont(new Font("Arial", Font.BOLD, 20));
+        lblTotal.setBounds(730, 315, 120, 30);
+        panel.add(lblTotal);
+
+        // =========================
+        // BOTONES
+        // =========================
+
+        JButton btnEliminar = new JButton("ELIMINAR");
+        btnEliminar.setBounds(40, 315, 120, 35);
+        panel.add(btnEliminar);
+
+        JButton btnRegistrar = new JButton("REGISTRAR PEDIDO");
+        btnRegistrar.setBounds(180, 315, 180, 35);
+        panel.add(btnRegistrar);
+
+        JButton btnLimpiar = new JButton("LIMPIAR");
+        btnLimpiar.setBounds(375, 315, 120, 35);
+        panel.add(btnLimpiar);
+
+        // =========================
+        // HISTORIAL
+        // =========================
+
+        JLabel lblHistorial = new JLabel("PEDIDOS REGISTRADOS");
+        lblHistorial.setFont(new Font("Arial", Font.BOLD, 18));
+        lblHistorial.setBounds(40, 365, 250, 30);
+        panel.add(lblHistorial);
+
+        modeloPedidos = new DefaultTableModel(
+                new Object[]{"ID Pedido", "Fecha", "Estado", "Total"}, 0
+        );
+
+        tablaPedidos = new JTable(modeloPedidos);
+
+        JScrollPane scrollPedidos = new JScrollPane(tablaPedidos);
+        scrollPedidos.setBounds(40, 400, 805, 150);
+        panel.add(scrollPedidos);
+
+        // =========================
+        // CAMBIAR ESTADO
+        // =========================
+
+        JButton btnPreparar = new JButton("EN PREPARACIÓN");
+        btnPreparar.setBounds(40, 570, 160, 35);
+        panel.add(btnPreparar);
+
+        JButton btnListo = new JButton("LISTO");
+        btnListo.setBounds(215, 570, 120, 35);
+        panel.add(btnListo);
+
+        JButton btnEntregado = new JButton("ENTREGADO");
+        btnEntregado.setBounds(350, 570, 130, 35);
+        panel.add(btnEntregado);
+
+        JButton btnActualizar = new JButton("ACTUALIZAR");
+        btnActualizar.setBounds(680, 570, 165, 35);
+        panel.add(btnActualizar);
+
+        // =========================
+        // CARGAR INFORMACIÓN
+        // =========================
+
+        cargarProductos();
+        cargarPedidos();
+
+        // =========================
+        // EVENTOS
+        // =========================
+
+        cmbProducto.addActionListener(e -> mostrarPrecio());
+
+        btnAgregar.addActionListener(e -> agregarProducto());
+
+        btnEliminar.addActionListener(e -> eliminarProducto());
+
+        btnRegistrar.addActionListener(e -> registrarPedido());
+
+        btnLimpiar.addActionListener(e -> limpiarPedido());
+
+        btnPreparar.addActionListener(e ->
+                cambiarEstado("En preparación")
+        );
+
+        btnListo.addActionListener(e ->
+                cambiarEstado("Listo")
+        );
+
+        btnEntregado.addActionListener(e ->
+                cambiarEstado("Entregado")
+        );
+
+        btnActualizar.addActionListener(e ->
+                cargarPedidos()
+        );
+
+        add(panel);
+    }
+
+    // =========================================================
+    // CARGAR PRODUCTOS
+    // =========================================================
+
+    private void cargarProductos() {
+
+        cmbProducto.removeAllItems();
+
+        String sql = "SELECT id_producto, nombre FROM productos ORDER BY nombre";
+
+        try (Connection cn = Conexion.conectar();
+             Statement st = cn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+
+                cmbProducto.addItem(
+                        rs.getInt("id_producto") +
+                        " - " +
+                        rs.getString("nombre")
+                );
+            }
+
+            mostrarPrecio();
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al cargar productos: " + ex.getMessage()
+            );
+        }
+    }
+
+    // =========================================================
+    // MOSTRAR PRECIO
+    // =========================================================
+
+    private void mostrarPrecio() {
+
+        if (cmbProducto.getSelectedItem() == null) {
+            lblPrecio.setText("0.00");
+            return;
+        }
+
+        String seleccionado =
+                cmbProducto.getSelectedItem().toString();
+
+        int id =
+                Integer.parseInt(
+                        seleccionado.split(" - ")[0]
+                );
+
+        String sql =
+                "SELECT precio FROM productos WHERE id_producto=?";
+
+        try (Connection cn = Conexion.conectar();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+
+                lblPrecio.setText(
+                        String.format("%.2f", rs.getDouble("precio"))
+                );
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al obtener precio: " + ex.getMessage()
+            );
+        }
+    }
+
+    // =========================================================
+    // AGREGAR PRODUCTO
+    // =========================================================
+
+    private void agregarProducto() {
+
+        if (cmbProducto.getSelectedItem() == null) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Selecciona un producto."
+            );
+
+            return;
+        }
+
+        try {
+
+            int cantidad =
+                    Integer.parseInt(txtCantidad.getText());
+
+            if (cantidad <= 0) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "La cantidad debe ser mayor a 0."
+                );
+
+                return;
+            }
+
+            String seleccionado =
+                    cmbProducto.getSelectedItem().toString();
+
+            int idProducto =
+                    Integer.parseInt(
+                            seleccionado.split(" - ")[0]
+                    );
+
+            String nombreProducto =
+                    seleccionado.substring(
+                            seleccionado.indexOf(" - ") + 3
+                    );
+
+            double precio =
+                    Double.parseDouble(lblPrecio.getText());
+
+            double subtotal =
+                    precio * cantidad;
+
+            modeloDetalle.addRow(new Object[]{
+                    idProducto,
+                    nombreProducto,
+                    cantidad,
+                    precio,
+                    subtotal
+            });
+
+            total += subtotal;
+
+            lblTotal.setText(
+                    String.format("S/ %.2f", total)
+            );
+
+            txtCantidad.setText("");
+
+        } catch (NumberFormatException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Ingresa una cantidad válida."
+            );
+        }
+    }
+
+    // =========================================================
+    // ELIMINAR PRODUCTO
+    // =========================================================
+
+    private void eliminarProducto() {
+
+        int fila = tablaDetalle.getSelectedRow();
+
+        if (fila == -1) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Selecciona un producto."
+            );
+
+            return;
+        }
+
+        double subtotal =
+                Double.parseDouble(
+                        modeloDetalle.getValueAt(fila, 4).toString()
+                );
+
+        total -= subtotal;
+
+        modeloDetalle.removeRow(fila);
+
+        lblTotal.setText(
+                String.format("S/ %.2f", total)
+        );
+    }
+
+    // =========================================================
+    // REGISTRAR PEDIDO
+    // =========================================================
+
+    private void registrarPedido() {
+
+        if (modeloDetalle.getRowCount() == 0) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Agrega al menos un producto."
+            );
+
+            return;
+        }
+
+        Connection cn = null;
+
+        try {
+
+            cn = Conexion.conectar();
+            cn.setAutoCommit(false);
+
+            String sqlPedido =
+                    "INSERT INTO pedidos (estado, total) " +
+                    "VALUES ('Pendiente', ?)";
+
+            PreparedStatement psPedido =
+                    cn.prepareStatement(
+                            sqlPedido,
+                            Statement.RETURN_GENERATED_KEYS
+                    );
+
+            psPedido.setDouble(1, total);
+            psPedido.executeUpdate();
+
+            ResultSet rs =
+                    psPedido.getGeneratedKeys();
+
+            int idPedido = 0;
+
+            if (rs.next()) {
+                idPedido = rs.getInt(1);
+            }
+
+            String sqlDetalle =
+                    "INSERT INTO detalle_pedido " +
+                    "(id_pedido, id_producto, cantidad, precio, subtotal) " +
+                    "VALUES (?, ?, ?, ?, ?)";
+
+            PreparedStatement psDetalle =
+                    cn.prepareStatement(sqlDetalle);
+
+            for (int i = 0;
+                 i < modeloDetalle.getRowCount();
+                 i++) {
+
+                int idProducto =
+                        Integer.parseInt(
+                                modeloDetalle.getValueAt(i, 0).toString()
+                        );
+
+                int cantidad =
+                        Integer.parseInt(
+                                modeloDetalle.getValueAt(i, 2).toString()
+                        );
+
+                double precio =
+                        Double.parseDouble(
+                                modeloDetalle.getValueAt(i, 3).toString()
+                        );
+
+                double subtotal =
+                        Double.parseDouble(
+                                modeloDetalle.getValueAt(i, 4).toString()
+                        );
+
+                psDetalle.setInt(1, idPedido);
+                psDetalle.setInt(2, idProducto);
+                psDetalle.setInt(3, cantidad);
+                psDetalle.setDouble(4, precio);
+                psDetalle.setDouble(5, subtotal);
+
+                psDetalle.executeUpdate();
+            }
+
+            cn.commit();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "¡Pedido registrado correctamente!\n\n" +
+                    "N.º de pedido: " + idPedido +
+                    "\nEstado: Pendiente" +
+                    "\nTotal: S/ " +
+                    String.format("%.2f", total)
+            );
+
+            limpiarPedido();
+
+            cargarPedidos();
+
+        } catch (SQLException ex) {
+
+            try {
+                if (cn != null) {
+                    cn.rollback();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al registrar pedido:\n" +
+                    ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+
+        } finally {
+
+            try {
+                if (cn != null) {
+                    cn.setAutoCommit(true);
+                    cn.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // =========================================================
+    // CARGAR PEDIDOS REGISTRADOS
+    // =========================================================
+
+    private void cargarPedidos() {
+
+        modeloPedidos.setRowCount(0);
+
+        String sql =
+                "SELECT id_pedido, fecha, estado, total " +
+                "FROM pedidos " +
+                "ORDER BY id_pedido DESC";
+
+        try (Connection cn = Conexion.conectar();
+             Statement st = cn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+
+                modeloPedidos.addRow(new Object[]{
+                        rs.getInt("id_pedido"),
+                        rs.getTimestamp("fecha"),
+                        rs.getString("estado"),
+                        "S/ " +
+                        String.format(
+                                "%.2f",
+                                rs.getDouble("total")
+                        )
+                });
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al cargar pedidos: " +
+                    ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    // =========================================================
+    // CAMBIAR ESTADO
+    // =========================================================
+
+    private void cambiarEstado(String nuevoEstado) {
+
+        int fila = tablaPedidos.getSelectedRow();
+
+        if (fila == -1) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Selecciona un pedido de la tabla."
+            );
+
+            return;
+        }
+
+        int idPedido =
+                Integer.parseInt(
+                        modeloPedidos.getValueAt(fila, 0).toString()
+                );
+
+        String sql =
+                "UPDATE pedidos SET estado=? WHERE id_pedido=?";
+
+        try (Connection cn = Conexion.conectar();
+             PreparedStatement ps = cn.prepareStatement(sql)) {
+
+            ps.setString(1, nuevoEstado);
+            ps.setInt(2, idPedido);
+
+            ps.executeUpdate();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Estado actualizado a: " + nuevoEstado
+            );
+
+            cargarPedidos();
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al actualizar estado: " +
+                    ex.getMessage()
+            );
+        }
+    }
+
+    // =========================================================
+    // LIMPIAR PEDIDO NUEVO
+    // =========================================================
+
+    private void limpiarPedido() {
+
+        modeloDetalle.setRowCount(0);
+
+        total = 0;
+
+        lblTotal.setText("S/ 0.00");
+
+        txtCantidad.setText("");
+
+        if (cmbProducto.getItemCount() > 0) {
+            cmbProducto.setSelectedIndex(0);
+        }
+    }
+
+    // =========================================================
+    // MAIN
+    // =========================================================
+
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            new Pedidos().setVisible(true);
+        });
+    }
+}
