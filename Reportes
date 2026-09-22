@@ -1,0 +1,333 @@
+package sistemagestiongastronomica;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.sql.*;
+
+public class Reportes extends JFrame {
+
+    private JLabel lblTotalVentas;
+    private JLabel lblCantidadVentas;
+    private JLabel lblTotalPedidos;
+    private JLabel lblProductoMasVendido;
+
+    private JTable tabla;
+    private DefaultTableModel modelo;
+
+    public Reportes() {
+
+        setTitle("Reportes - Sistema de Gestión Gastronómica");
+        setSize(900, 650);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(false);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+
+        // ==========================================
+        // TÍTULO
+        // ==========================================
+
+        JLabel titulo = new JLabel("REPORTES DEL SISTEMA");
+        titulo.setFont(new Font("Arial", Font.BOLD, 26));
+        titulo.setBounds(300, 20, 350, 35);
+        panel.add(titulo);
+
+        // ==========================================
+        // RESUMEN
+        // ==========================================
+
+        JLabel lblVentasTexto = new JLabel("TOTAL DE VENTAS:");
+        lblVentasTexto.setFont(new Font("Arial", Font.BOLD, 15));
+        lblVentasTexto.setBounds(50, 85, 180, 30);
+        panel.add(lblVentasTexto);
+
+        lblTotalVentas = new JLabel("S/ 0.00");
+        lblTotalVentas.setFont(new Font("Arial", Font.BOLD, 20));
+        lblTotalVentas.setBounds(50, 115, 180, 35);
+        panel.add(lblTotalVentas);
+
+        JLabel lblCantidadTexto = new JLabel("CANTIDAD DE VENTAS:");
+        lblCantidadTexto.setFont(new Font("Arial", Font.BOLD, 15));
+        lblCantidadTexto.setBounds(250, 85, 200, 30);
+        panel.add(lblCantidadTexto);
+
+        lblCantidadVentas = new JLabel("0");
+        lblCantidadVentas.setFont(new Font("Arial", Font.BOLD, 20));
+        lblCantidadVentas.setBounds(250, 115, 180, 35);
+        panel.add(lblCantidadVentas);
+
+        JLabel lblPedidosTexto = new JLabel("TOTAL DE PEDIDOS:");
+        lblPedidosTexto.setFont(new Font("Arial", Font.BOLD, 15));
+        lblPedidosTexto.setBounds(470, 85, 180, 30);
+        panel.add(lblPedidosTexto);
+
+        lblTotalPedidos = new JLabel("0");
+        lblTotalPedidos.setFont(new Font("Arial", Font.BOLD, 20));
+        lblTotalPedidos.setBounds(470, 115, 180, 35);
+        panel.add(lblTotalPedidos);
+
+        JLabel lblProductoTexto = new JLabel("PRODUCTO MÁS VENDIDO:");
+        lblProductoTexto.setFont(new Font("Arial", Font.BOLD, 15));
+        lblProductoTexto.setBounds(680, 85, 200, 30);
+        panel.add(lblProductoTexto);
+
+        lblProductoMasVendido = new JLabel("-");
+        lblProductoMasVendido.setFont(new Font("Arial", Font.BOLD, 16));
+        lblProductoMasVendido.setBounds(680, 115, 180, 35);
+        panel.add(lblProductoMasVendido);
+
+        // ==========================================
+        // TABLA DE VENTAS
+        // ==========================================
+
+        JLabel lblHistorial = new JLabel("HISTORIAL DE VENTAS");
+        lblHistorial.setFont(new Font("Arial", Font.BOLD, 20));
+        lblHistorial.setBounds(50, 180, 300, 30);
+        panel.add(lblHistorial);
+
+        modelo = new DefaultTableModel(
+                new Object[]{
+                    "ID Venta",
+                    "ID Pedido",
+                    "Fecha",
+                    "Total"
+                }, 0
+        );
+
+        tabla = new JTable(modelo);
+
+        JScrollPane scroll = new JScrollPane(tabla);
+        scroll.setBounds(50, 220, 800, 250);
+        panel.add(scroll);
+
+        // ==========================================
+        // BOTÓN ACTUALIZAR
+        // ==========================================
+
+        JButton btnActualizar = new JButton("ACTUALIZAR REPORTES");
+        btnActualizar.setBounds(350, 510, 200, 40);
+        panel.add(btnActualizar);
+
+        // ==========================================
+        // CARGAR DATOS
+        // ==========================================
+
+        cargarReportes();
+
+        // ==========================================
+        // EVENTO
+        // ==========================================
+
+        btnActualizar.addActionListener(e -> cargarReportes());
+
+        add(panel);
+    }
+
+    // ==================================================
+    // CARGAR TODOS LOS REPORTES
+    // ==================================================
+
+    private void cargarReportes() {
+
+        cargarTotalVentas();
+        cargarCantidadVentas();
+        cargarTotalPedidos();
+        cargarProductoMasVendido();
+        cargarHistorialVentas();
+    }
+
+    // ==================================================
+    // TOTAL DE VENTAS
+    // ==================================================
+
+    private void cargarTotalVentas() {
+
+        String sql = "SELECT ISNULL(SUM(total), 0) AS total FROM ventas";
+
+        try (Connection cn = Conexion.conectar();
+             Statement st = cn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            if (rs.next()) {
+
+                double total = rs.getDouble("total");
+
+                lblTotalVentas.setText(
+                        String.format("S/ %.2f", total)
+                );
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al obtener total de ventas: "
+                    + ex.getMessage()
+            );
+        }
+    }
+
+    // ==================================================
+    // CANTIDAD DE VENTAS
+    // ==================================================
+
+    private void cargarCantidadVentas() {
+
+        String sql = "SELECT COUNT(*) AS cantidad FROM ventas";
+
+        try (Connection cn = Conexion.conectar();
+             Statement st = cn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            if (rs.next()) {
+
+                lblCantidadVentas.setText(
+                        String.valueOf(
+                                rs.getInt("cantidad")
+                        )
+                );
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al obtener cantidad de ventas: "
+                    + ex.getMessage()
+            );
+        }
+    }
+
+    // ==================================================
+    // TOTAL DE PEDIDOS
+    // ==================================================
+
+    private void cargarTotalPedidos() {
+
+        String sql = "SELECT COUNT(*) AS cantidad FROM pedidos";
+
+        try (Connection cn = Conexion.conectar();
+             Statement st = cn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            if (rs.next()) {
+
+                lblTotalPedidos.setText(
+                        String.valueOf(
+                                rs.getInt("cantidad")
+                        )
+                );
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al obtener cantidad de pedidos: "
+                    + ex.getMessage()
+            );
+        }
+    }
+
+    // ==================================================
+    // PRODUCTO MÁS VENDIDO
+    // ==================================================
+
+    private void cargarProductoMasVendido() {
+
+        String sql =
+                "SELECT TOP 1 p.nombre, " +
+                "SUM(dp.cantidad) AS cantidad " +
+                "FROM detalle_pedido dp " +
+                "INNER JOIN productos p " +
+                "ON dp.id_producto = p.id_producto " +
+                "INNER JOIN ventas v " +
+                "ON dp.id_pedido = v.id_pedido " +
+                "GROUP BY p.nombre " +
+                "ORDER BY SUM(dp.cantidad) DESC";
+
+        try (Connection cn = Conexion.conectar();
+             Statement st = cn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            if (rs.next()) {
+
+                String nombre =
+                        rs.getString("nombre");
+
+                int cantidad =
+                        rs.getInt("cantidad");
+
+                lblProductoMasVendido.setText(
+                        nombre + " (" + cantidad + ")"
+                );
+
+            } else {
+
+                lblProductoMasVendido.setText("-");
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al obtener producto más vendido: "
+                    + ex.getMessage()
+            );
+        }
+    }
+
+    // ==================================================
+    // HISTORIAL DE VENTAS
+    // ==================================================
+
+    private void cargarHistorialVentas() {
+
+        modelo.setRowCount(0);
+
+        String sql =
+                "SELECT id_venta, id_pedido, fecha, total " +
+                "FROM ventas " +
+                "ORDER BY id_venta DESC";
+
+        try (Connection cn = Conexion.conectar();
+             Statement st = cn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+
+            while (rs.next()) {
+
+                modelo.addRow(new Object[]{
+                    rs.getInt("id_venta"),
+                    rs.getInt("id_pedido"),
+                    rs.getTimestamp("fecha"),
+                    "S/ " + String.format(
+                            "%.2f",
+                            rs.getDouble("total")
+                    )
+                });
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al cargar historial: "
+                    + ex.getMessage()
+            );
+        }
+    }
+
+    // ==================================================
+    // MAIN
+    // ==================================================
+
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            new Reportes().setVisible(true);
+        });
+    }
+}
