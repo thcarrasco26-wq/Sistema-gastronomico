@@ -1,0 +1,80 @@
+package sistemagestiongastronomica;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class MenuPrincipal extends JFrame {
+
+    public MenuPrincipal() {
+
+        setTitle("Menú Principal - Sistema de Gestión Gastronómica");
+        setSize(700, 450);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(false);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(null);
+
+        JLabel titulo = new JLabel("MENÚ PRINCIPAL");
+        titulo.setFont(new Font("Arial", Font.BOLD, 28));
+        titulo.setBounds(245, 30, 250, 40);
+        panel.add(titulo);
+
+        // BOTÓN PRODUCTOS
+        JButton btnProductos = new JButton("PRODUCTOS");
+        btnProductos.setBounds(80, 120, 220, 60);
+        panel.add(btnProductos);
+
+        // BOTÓN PEDIDOS
+        JButton btnPedidos = new JButton("PEDIDOS");
+        btnPedidos.setBounds(390, 120, 220, 60);
+        panel.add(btnPedidos);
+
+        btnPedidos.addActionListener(e -> {
+            new Pedidos().setVisible(true);
+        });
+
+        // BOTÓN VENTAS
+        JButton btnVentas = new JButton("VENTAS");
+        btnVentas.setBounds(80, 220, 220, 60);
+        panel.add(btnVentas);
+
+        btnVentas.addActionListener(e -> {
+            new Ventas().setVisible(true);
+        });
+
+        // BOTÓN REPORTES
+        JButton btnReportes = new JButton("REPORTES");
+        btnReportes.setBounds(390, 220, 220, 60);
+        panel.add(btnReportes);
+
+        btnReportes.addActionListener(e -> {
+            new Reportes().setVisible(true);
+        });
+
+        // BOTÓN CERRAR SESIÓN
+        JButton btnSalir = new JButton("CERRAR SESIÓN");
+        btnSalir.setBounds(250, 320, 200, 40);
+        panel.add(btnSalir);
+
+        // ABRIR PRODUCTOS
+        btnProductos.addActionListener(e -> {
+            new Productos().setVisible(true);
+        });
+
+        // CERRAR SESIÓN
+        btnSalir.addActionListener(e -> {
+            new Login().setVisible(true);
+            dispose();
+        });
+
+        add(panel);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            new MenuPrincipal().setVisible(true);
+        });
+    }
+}
