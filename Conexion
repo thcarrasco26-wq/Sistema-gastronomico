@@ -1,0 +1,38 @@
+package sistemagestiongastronomica;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class Conexion {
+
+    private static final String URL =
+            "jdbc:sqlserver://localhost:1433;"
+          + "databaseName=SistemaGestionGastronomica;"
+          + "encrypt=true;"
+          + "trustServerCertificate=true;";
+
+    private static final String USUARIO = "sistema_gastro";
+    private static final String CONTRASENA = "Gastro1234";
+
+    public static Connection conectar() {
+        try {
+            Connection cn = DriverManager.getConnection(
+                    URL,
+                    USUARIO,
+                    CONTRASENA
+            );
+
+            System.out.println("CONEXION EXITOSA A SQL SERVER");
+            return cn;
+
+        } catch (SQLException e) {
+            System.out.println("ERROR DE CONEXION: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public static void main(String[] args) {
+        conectar();
+    }
+}
